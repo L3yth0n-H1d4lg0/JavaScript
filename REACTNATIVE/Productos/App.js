@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { Alert, Button, StyleSheet, Text, TextInput, FlatList, View } from 'react-native';
+import { Alert, Button, Modal, StyleSheet, Text, TextInput, TouchableHighlight, TouchableOpacity, FlatList, View } from 'react-native';
 import { useState } from 'react';
 
 let productos = [
@@ -28,49 +28,83 @@ export default function App() {
 
   const [numElementos, setNumelementos] = useState(productos.length);
 
-  let ItemProducto = (props) => {
-    return (
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [itemEliminado, setItemEliminado] = useState(null);
+
+  let ItemProducto = ({ indice, producto }) => {
+    return ( //Se puede omitir el return y dejarlo únicamente con paréntesis, pero es opcional, ya que puede presentar problemas
       <View style={styles.itemProducto}>
         <View style={styles.itemId}>
           <Text style={styles.textoPrincial}>
-            {props.producto.codigo}
+            {producto.codigo}
           </Text>
         </View>
         <View style={styles.itemContenido}>
           <Text style={styles.textoPrincial}>
-            {props.producto.nombre}
+            {producto.nombre}
           </Text>
           <Text style={styles.textoSecundario}>
-            {props.producto.categoria}
+            {producto.categoria}
           </Text>
         </View>
         <View style={styles.itemVenta}>
           <Text style={styles.textoTerceario}>
-            {props.producto.precioVenta}
+            {producto.precioVenta}
           </Text>
         </View>
         <View style={styles.itemBotones}>
-          <Button
-            title=' E '
+          <TouchableHighlight
+            style={styles.botonEditar}
+            underlayColor='darkgreen'
             onPress={() => {
-              setTxtCodigo(String(props.producto.codigo));
-              setTxtNombre(props.producto.nombre);
-              setTxtCategoria(props.producto.categoria);
-              setTxtPrecioCompra(String(props.producto.precioCompra));
-              setTxtPrecioVenta(String(props.producto.precioVenta));
+              setTxtCodigo(String(producto.codigo));
+              setTxtNombre(producto.nombre);
+              setTxtCategoria(producto.categoria);
+              setTxtPrecioCompra(String(producto.precioCompra));
+              setTxtPrecioVenta(String(producto.precioVenta));
               esNuevo = false;
-              indiceSeleccionado = props.indice;
+              indiceSeleccionado = indice;
             }}
-          />
-          <Button
-            title=' X '
+          >
+            <Text style={styles.textoBoton}> E </Text>
+          </TouchableHighlight>
+          <TouchableOpacity
+            style={styles.botonEliminar}
             onPress={() => {
-              productos.splice(props.indice, 1);
-              setNumelementos(productos.length);
+              handleEliminar(indice)
             }}
-          />
+          ><Text style={styles.textoBoton}> X </Text>
+          </TouchableOpacity>
+          <Modal
+            animationType="fade"
+            transparent={true}
+            visible={isModalVisible}
+            onRequestClose={handleCancelar}
+          >
+            <View style={styles.modalBackground}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTexto}>¿Está seguro que quiere eliminar?</Text>
+
+                <View style={styles.botonesContainer}>
+                  <TouchableOpacity
+                    style={[styles.boton, styles.botonAceptar]}
+                    onPress={handleAceptar}
+                  >
+                    <Text style={styles.textoBoton}>Aceptar</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.boton, styles.botonCancelar]}
+                    onPress={handleCancelar}
+                  >
+                    <Text style={styles.textoBoton}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </View>
-      </View>
+      </View >
     );
   };
 
@@ -124,6 +158,23 @@ export default function App() {
     limpiar();
   };
 
+  let handleEliminar = (indice) => {
+    setItemEliminado(indice);
+    setIsModalVisible(true);
+  };
+
+  let handleAceptar = () => {
+    if (itemEliminado !== null) {
+      productos.splice(itemEliminado, 1);
+      setNumelementos(productos.length);
+    }
+    setIsModalVisible(false);
+  };
+
+  let handleCancelar = () => {
+    setIsModalVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.containerTitle}>
@@ -154,7 +205,7 @@ export default function App() {
           style={styles.textinput}
           value={txtPrecioCompra}
           placeholder='PRECIO DE COMPRA'
-          onChangeText={(value) => {
+          onChangeText={value => {
             if (value === "" || isNaN(value)) {
               setTxtPrecioCompra("");
               setTxtPrecioVenta("");
@@ -191,12 +242,12 @@ export default function App() {
       <View style={styles.areaContenido}>
         <FlatList
           data={productos}
-          renderItem={(elemento) => {
-            return <ItemProducto indice={elemento.index} producto={elemento.item} />; //Flatlist retornando el componente propio
-          }}
-          keyExtractor={(item) => {
-            return item.codigo.toString();
-          }}
+          renderItem={({ item, index }) => {
+            return (
+              <ItemProducto indice={index} producto={item} />
+            );
+          }}//Flatlist retornando el componente propio
+          keyExtractor={item => item.codigo.toString()}
         />
       </View>
     </View>
@@ -283,5 +334,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     alignItems: 'center'
+  },
+  botonEditar: {
+    backgroundColor: 'seagreen',
+    padding: 5
+  },
+  botonEliminar: {
+    backgroundColor: 'red',
+    padding: 5
+  },
+  textoBoton: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalBackground: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  modalContainer: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTexto: {
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  botonesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+  },
+  boton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  botonAceptar: {
+    backgroundColor: 'green',
+  },
+  botonCancelar: {
+    backgroundColor: 'gray',
   }
 });
